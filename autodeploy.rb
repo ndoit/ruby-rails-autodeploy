@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 require 'optparse'
+require 'erb'
 
 ARGV << '-h' if ARGV.empty?
 
@@ -20,8 +21,12 @@ OptionParser.new do |opts|
     end
   end
 
-  opts.on("-e env", "--cap-environment env", "The name of the capistrano environment file to use") do |n|
-    options[:env] = n
+#  opts.on("-e env", "--cap-environment env", "The name of the capistrano environment file to use") do |n|
+#    options[:env] = n
+#  end
+
+  opts.on("-r remote_host", "--remote-host remote_host", "The target machine") do |n|
+    options[:remote_host] = n
   end
 
   opts.on("-s remote_user", "--remote-user remote_user", "The name of the remote user") do |n|
@@ -29,25 +34,47 @@ OptionParser.new do |opts|
   end
 
   opts.on("-p remote_password", "--remote-password remote_password", "The password of the remote user") do |n|
-    options[:remote_password] = n
+    options[:remote_pass] = n
   end
 
   opts.on("-v", "--[no-]verbose", "Run verbosely") do |v|
     options[:verbose] = v
   end
+
 end.parse!
 
 p options
 
+# simple capistrano environment template
+# what about when cap deploys to multiple machines?
+# we could just instruct the ops user to edit the passwords in...
+deploy_env_template = %{ 
+
+  server '<%= remote_host %>', user: '<%= remote_user %>', password: '<%= remote_pass %>', roles: %w{web app} 
+
+}
+
 temp_dir = "deploy_me"
+temp_env = "deploy_env"
+
+# render out a capistrano deploy template
+remote_host = options[:remote_host]
+remote_user = options[:remote_user]
+remote_pass = options[:remote_pass]
+renderer = ERB.new(deploy_env_template)
+puts rendered_env = renderer.result()
+
+output = `git clone #{options[:url]} #{temp_dir}`
+env_file = "#{temp_dir}/config/deploy/#{temp_env}.rb" 
+File.open(env_file,'w') do |s|
+    s.puts rendered_env 
+end
 
 cmds = [] 
-cmds << "git clone #{options[:url]} #{temp_dir}"
 cmds << "cd #{temp_dir}"
 cmds << "bundle install" 
-cmds << "bundle exec cap #{options[:env]} deploy:first_time"
+cmds << "bundle exec cap #{temp_env} deploy:first_time"
 cmds << "rm -rf #{temp_dir}"
 all_cmds = cmds.join(' && ')
 output = `#{all_cmds}` 
 
-# what about when cap deploys to multiple machines?
