@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+require 'open3'
 require 'optparse'
 require 'erb'
 
@@ -74,7 +75,18 @@ cmds = []
 cmds << "cd #{temp_dir}"
 cmds << "bundle install" 
 cmds << "bundle exec cap #{temp_env} deploy:first_time"
+cmds << "cd .."
 cmds << "rm -rf #{temp_dir}"
 all_cmds = cmds.join(' && ')
 output = `#{all_cmds}` 
+
+p all_cmds
+p output
+exit
+########
+Open3.popen3(all_cmds) do |stdin, stdout, stderr, wait_thr|
+  while line = stderr.gets
+    puts line
+  end
+end
 
