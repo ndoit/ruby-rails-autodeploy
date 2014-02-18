@@ -78,8 +78,9 @@ cmds << "bundle exec cap #{temp_env} deploy:first_time"
 cmds << "cd .."
 cmds << "rm -rf #{temp_dir}"
 all_cmds = cmds.join(' && ')
-output = `#{all_cmds}` 
+#output = `#{all_cmds}` 
 
+p "Automatic cap deploy skipped for demo purposes.  Run this:"
 p all_cmds
 p output
 exit
